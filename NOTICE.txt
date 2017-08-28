@@ -1,0 +1,2 @@
+New Relic Datasource - Custom Grafana Plugin
+Copyright 2017 Vistaprint

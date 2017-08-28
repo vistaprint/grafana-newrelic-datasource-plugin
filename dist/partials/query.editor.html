@@ -1,0 +1,66 @@
+<query-editor-row query-ctrl="ctrl">
+  <!-- Application -->
+  <div class="gf-form-inline">
+    <div class="gf-form gf-form--grow">
+      <label ng-show="ctrl.target.type == 'applications'"
+        class="gf-form-label query-keyword width-8">
+        Application
+      </label>
+      <select ng-show="ctrl.target.type == 'applications'"
+        ng-model="ctrl.target.app_id" class="gf-form-input width-15"
+        ng-options="app.id as app.name for app in ctrl.apps"
+        ng-change="ctrl.toggleApplication()">
+      </select>
+
+      <!-- Operand1 -->
+      <!-- Namespace -->
+      <metric-segment-model property="ctrl.target.target"
+        get-options="ctrl.getMetricNamespaces()"
+        custom="true"
+        class="width-15"
+        placeholder="Metric Namespace">
+      </metric-segment-model>
+      <!-- MetricValue -->
+      <metric-segment-model property="ctrl.target.value"
+        get-options="ctrl.getMetricValues()"
+        on-change="ctrl.toggleOperand2()"
+        class="width-15"
+        placeholder="Metric Value">
+      </metric-segment-model>
+
+      <!-- Operator -->
+      <select ng-model="ctrl.target.operator" class="gf-form-input width-6"
+        ng-options="operator.value as operator.label for operator in ctrl.operators"
+        ng-change="ctrl.toggleOperand2()"
+        placeholder="Operator">
+      </select>
+
+      <!-- Operand2 -->
+      <div class="gf-form gf-form--grow" ng-show="ctrl.isOperand2Visible">
+        <!-- Namespace -->
+        <metric-segment-model property="ctrl.target.targetOperand2"
+          get-options="ctrl.getMetricNamespacesOperand2()"
+          custom="true"
+          class="width-15"
+          placeholder="Metric Namespace">
+        </metric-segment-model>
+        <!-- MetricValue -->
+        <metric-segment-model property="ctrl.target.valueOperand2"
+          get-options="ctrl.getMetricValuesOperand2()"
+          on-change="ctrl.onChangeInternal()"
+          class="width-15"
+          placeholder="Metric Value">
+        </metric-segment-model>
+      </div>
+
+    </div>
+  </div>  
+
+  <!-- Alias -->
+  <div class="gf-form-inline">
+    <div class="gf-form gf-form--grow">
+      <label class="gf-form-label query-keyword width-8">Series Alias</label>
+      <input type="text" class="gf-form-input max-width-15" ng-model="ctrl.target.alias" spellcheck='false' placeholder="Naming pattern" ng-blur="ctrl.refresh()">
+    </div>
+  </div>
+</query-editor-row>

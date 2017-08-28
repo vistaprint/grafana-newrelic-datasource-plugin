@@ -1,0 +1,23 @@
+{
+  "name": "NewRelic",
+  "type": "datasource",
+  "id": "newrelic",
+
+  "metrics": true,
+  "annotations": false,
+
+  "info": {
+    "author": {
+      "name": "Vistaprint",
+      "url": "http://www.vistaprint.com/"
+    },
+    "logos": {
+      "small": "img/newrelic_logo.png",
+      "large": "img/newrelic_logo.png"
+    },
+    "dependencies": {
+      "grafanaVersion": "^3.0.1",
+      "plugins": [ ]
+    }
+  }
+}
