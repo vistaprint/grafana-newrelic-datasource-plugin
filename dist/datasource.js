@@ -81,12 +81,15 @@ System.register(['moment'], function(exports_1) {
                         });
                     });
                 };
+                // All intervals under 1 minute are automatically set to 1 minute
+                // At this time it seems like the NewRelic API does not return any results with an interval lower than 1m
+                // Note that for case "s"
                 NewRelicDatasource.prototype._convertToSeconds = function (interval) {
                     var seconds = parseInt(interval);
                     var unit = interval.slice(-1).toLowerCase();
                     switch (unit) {
                         case "s":
-                            seconds = 30;
+                            seconds = 60;
                             break;
                         case "m":
                             seconds = seconds * 60;
@@ -98,7 +101,7 @@ System.register(['moment'], function(exports_1) {
                             seconds = seconds * 86400;
                             break;
                         default:
-                            seconds = 30;
+                            seconds = 60;
                             break;
                     }
                     return seconds;
