@@ -86,6 +86,7 @@ System.register(['moment'], function(exports_1) {
                     var unit = interval.slice(-1).toLowerCase();
                     switch (unit) {
                         case "s":
+                            seconds = 30;
                             break;
                         case "m":
                             seconds = seconds * 60;
@@ -95,6 +96,9 @@ System.register(['moment'], function(exports_1) {
                             break;
                         case "d":
                             seconds = seconds * 86400;
+                            break;
+                        default:
+                            seconds = 30;
                             break;
                     }
                     return seconds;

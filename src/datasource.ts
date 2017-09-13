@@ -90,6 +90,7 @@ class NewRelicDatasource {
     var unit: string = interval.slice(-1).toLowerCase();
     switch (unit) {
       case "s":
+        seconds = 30;
         break;
       case "m":
         seconds = seconds * 60;
@@ -99,6 +100,9 @@ class NewRelicDatasource {
         break;
       case "d":
         seconds = seconds * 86400;
+        break;
+      default:
+        seconds = 30;
         break;
     }
     return seconds;
