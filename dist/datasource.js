@@ -248,10 +248,13 @@ System.register(['moment'], function(exports_1) {
                     });
                 };
                 // Gets applications for query editor
-                NewRelicDatasource.prototype.getApplications = function () {
+                NewRelicDatasource.prototype.getApplications = function (pageNumber) {
+                    if (pageNumber == null) {
+                        pageNumber = 1;
+                    }
                     var self = this;
                     var request = {
-                        url: self.apiUrl + '/v2/applications.json'
+                        url: self.apiUrl + '/v2/applications.json?page=' + pageNumber
                     };
                     return this.makeRequest(request)
                         .then(function (result) {

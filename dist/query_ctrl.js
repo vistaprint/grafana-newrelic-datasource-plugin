@@ -36,8 +36,8 @@ System.register(['app/plugins/sdk', 'lodash'], function(exports_1) {
                     lodash_1.default.defaultsDeep(this.target, target_defaults);
                     this.getApplications();
                     this.toggleOperand2();
-                }
-                ;
+                };
+
                 // Gets list of applications from datasource to populate the Application dropdown listbox
                 NewRelicQueryCtrl.prototype.getApplications = function () {
                     var _this = this;
@@ -45,15 +45,32 @@ System.register(['app/plugins/sdk', 'lodash'], function(exports_1) {
                         return Promise.resolve(this.apps);
                     }
                     else {
-                        return this.datasource.getApplications()
-                            .then(function (apps) {
-                            apps = lodash_1.default.map(apps, function (app) {
-                                return { name: app.name, id: app.id };
-                            });
-                            apps.push({ name: 'Default', id: null });
-                            _this.apps = apps;
-                            return apps;
-                        });
+                        // keep the final page number low enough to prevent any runaway processes, just in case...
+                        var finalPageNumber = 10;
+                        (function loopOnPagedResults(requestedPageNumber) {
+                            shouldContinueLoop = (finalPageNumber > requestedPageNumber);
+                            if (shouldContinueLoop) new Promise((resolve, reject) => {
+                                _this.datasource.getApplications(requestedPageNumber).then(function (appsPageData) {
+                                    appsPageData = lodash_1.default.map(
+                                        appsPageData,
+                                        function (appsPageData) {
+                                            return { name: appsPageData.name, id: appsPageData.id };
+                                        }
+                                    );
+                                    // Max data results count is 200: https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output
+                                    if (appsPageData.length < 200) {
+                                        finalPageNumber = requestedPageNumber;
+                                    }
+                                    if (_this.apps == null) {
+                                        appsPageData.unshift({ name: 'Default', id: null });
+                                        _this.apps = appsPageData;
+                                    } else {
+                                        for(var i=0;i<appsPageData.length;i++) {_this.apps.push(appsPageData[i]);}
+                                    }
+                                    resolve();
+                                });
+                            }).then(loopOnPagedResults.bind(null, requestedPageNumber + 1));
+                        })(1);
                     }
                 };
                 // Gets list of metrics from datasource 
