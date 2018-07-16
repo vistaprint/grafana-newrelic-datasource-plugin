@@ -266,6 +266,26 @@ System.register(['moment'], function(exports_1) {
                         }
                     });
                 };
+                // Gets labels for query editor
+                NewRelicDatasource.prototype.getLabels = function (pageNumber) {
+                    if (pageNumber == null) {
+                        pageNumber = 1;
+                    }
+                    var self = this;
+                    var request = {
+                        url: self.apiUrl + '/v2/labels.json?page=' + pageNumber
+                    };
+                    return this.makeRequest(request)
+                        .then(function (result) {
+                        if (result && result.response && result.response.labels) {
+                            let newRelicLabelResponse = result.response.labels
+                            return newRelicLabelResponse;
+                        }
+                        else {
+                            return [];
+                        }
+                    });
+                };
                 return NewRelicDatasource;
             })();
             exports_1("NewRelicDatasource", NewRelicDatasource);
