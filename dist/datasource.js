@@ -229,13 +229,16 @@ System.register(['moment'], function(exports_1) {
                     });
                 };
                 // Gets metrics for query editor
-                NewRelicDatasource.prototype.getMetricNames = function (application_id) {
+                NewRelicDatasource.prototype.getMetricNames = function (application_id, pageNumber) {
+                    if (pageNumber == null) {
+                        pageNumber = 1;
+                    }
                     var self = this;
                     if (!application_id) {
                         application_id = this.appId;
                     }
                     var request = {
-                        url: self.apiUrl + '/v2/applications/' + application_id + '/metrics.json'
+                        url: self.apiUrl + '/v2/applications/' + application_id + '/metrics.json?page=' + pageNumber
                     };
                     return this.makeRequest(request)
                         .then(function (result) {
