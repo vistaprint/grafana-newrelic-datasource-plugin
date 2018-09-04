@@ -57,9 +57,8 @@ Open a graph in edit mode by click the *Title > Edit* (or by pressing *e* key wh
 - Use *Mixed* datasource if you're trying to superimpose metrics from different datasources.
 
 ## A note on large result sets from New Relic
-New Relic APIs, by default, return 200 results (see https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output). Paging has been added to the query for Applications, with an arbitrary limit hardcoded at 10 pages.
-- The hardcoded limit is arbitrary. If you need more than 2000 results (200 per page over 10 pages), increasing the *finalPageNumber* default value in *NewRelicQueryCtrl.prototype.getApplications* is all that would need to be done.
-- Although paging has been implemented for Applications, the same can not yet be said for Metrics. This means that Metrics are currently limited to 200 results maximum.
-
+New Relic APIs, by default, return 200 results for data and 1000 results for names (see https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output). Paging has been added to the query for Applications, with an arbitrary limit hardcoded at 10 pages (2000 results). Metrics also does paging, with the same 10 page limit (10000 results).
+- The hardcoded limit is arbitrary. If you need more than the current maximums, increasing the *finalPageNumber* default value in *NewRelicQueryCtrl.prototype.getApplications* is all that would need to be done.
+- The hardcoded limit could be rather easily removed entirely, but exists as a failsafe for not hammering the New Relic API in the event that a bug is introduced that would prevent breaking from the recursive loop.
 
 
