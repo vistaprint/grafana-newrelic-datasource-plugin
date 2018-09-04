@@ -38,55 +38,74 @@ System.register(['app/plugins/sdk', 'lodash'], function(exports_1) {
                     this.toggleOperand2();
                 };
 
+                /// "private" function that is called to handle paging of data coming from _this.datasource (via datasourceGetterFunc)
+                /// @param datasourceGetterFunc function call to get data from the datasource
+                /// @param transformFunc optional function call to transform data before injecting it into a NewRelicQueryCtrl field member
+                /// @param finalPageBreakerNumber max number of pages to query from New Relic (failsafe that could probably be refactored out if someone really doesn't like such patterns)
+                /// @param maxItemsPerPage maximum number of items returned per page by New Relic (usually 200 or 1000, depending on type of data -- see https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output)
+                /// @param getFieldDataFunc getter function for the field member that will be caching the results from New Relic
+                /// @param setFieldDataFunc setter (i.e., initializer) function for the field member that will be caching the results from New Relic
+                /// @param appendFieldDataFunc called when new page data is available to apply to the value acquired from a call to getFieldDataFunc
+                NewRelicQueryCtrl.prototype.doPagingLoop = function (datasourceGetterFunc, transformFunc, finalPageBreakerNumber, maxItemsPerPage,
+                                                                     getFieldDataFunc, setFieldDataFunc, appendFieldDataFunc) {
+                    (function loop(requestedPageNumber) {
+                        shouldContinueLoop = (finalPageBreakerNumber > requestedPageNumber);
+                        if (shouldContinueLoop) new Promise((resolve, reject) => {
+                            datasourceGetterFunc(requestedPageNumber).then(function (pageData) {
+                                if (transformFunc) {
+                                    pageData = transformFunc(pageData);
+                                }
+                                // Max "data" results count is 200, "name" is 1000: https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output
+                                if (pageData.length < maxItemsPerPage) {
+                                    finalPageBreakerNumber = requestedPageNumber;
+                                }
+                                let fieldMemberData = getFieldDataFunc();
+                                if (fieldMemberData == null) {
+                                    setFieldDataFunc(pageData);
+                                } else {
+                                    for(var i=0;i<pageData.length;i++){ appendFieldDataFunc(pageData[i]); }
+                                }
+                                resolve();
+                            });
+                        }).then(loop.bind(null, requestedPageNumber+1, false));
+                    })(1);
+                    let results = getFieldDataFunc();
+                    return Promise.resolve(results);
+                };
                 // Gets list of applications from datasource to populate the Application dropdown listbox
                 NewRelicQueryCtrl.prototype.getApplications = function () {
                     var _this = this;
-                    if (this.apps) {
-                        return Promise.resolve(this.apps);
+                    if (_this.apps === undefined) {
+                        _this.doPagingLoop(
+                            function(requestedPageNumber) { return _this.datasource.getApplications(requestedPageNumber); },
+                            function(appsPageData) { return lodash_1.default.map(appsPageData, function(appsPageDataItem) { return {name: appsPageDataItem.name, id: appsPageDataItem.id};}); },
+                            10,
+                            200,
+                            function() { return _this.apps; },
+                            function(cachedData) { if (_this.apps === undefined) { _this.apps = cachedData; } },
+                            function(dataItem) { _this.apps.push(dataItem); }
+                        );
                     }
-                    else {
-                        // keep the final page number low enough to prevent any runaway processes, just in case...
-                        var finalPageNumber = 10;
-                        (function loopOnPagedResults(requestedPageNumber) {
-                            shouldContinueLoop = (finalPageNumber > requestedPageNumber);
-                            if (shouldContinueLoop) new Promise((resolve, reject) => {
-                                _this.datasource.getApplications(requestedPageNumber).then(function (appsPageData) {
-                                    appsPageData = lodash_1.default.map(
-                                        appsPageData,
-                                        function (appsPageData) {
-                                            return { name: appsPageData.name, id: appsPageData.id };
-                                        }
-                                    );
-                                    // Max data results count is 200: https://docs.newrelic.com/docs/apis/rest-api-v2/requirements/pagination-api-output
-                                    if (appsPageData.length < 200) {
-                                        finalPageNumber = requestedPageNumber;
-                                    }
-                                    if (_this.apps == null) {
-                                        appsPageData.unshift({ name: 'Default', id: null });
-                                        _this.apps = appsPageData;
-                                    } else {
-                                        for(var i=0;i<appsPageData.length;i++) {_this.apps.push(appsPageData[i]);}
-                                    }
-                                    resolve();
-                                });
-                            }).then(loopOnPagedResults.bind(null, requestedPageNumber + 1));
-                        })(1);
-                    }
+                    return Promise.resolve(_this.apps);
                 };
-                // Gets list of metrics from datasource 
+
+                // Gets list of metrics from datasource
                 NewRelicQueryCtrl.prototype.getMetrics = function () {
                     var _this = this;
-                    if (this.metricsOperand1) {
-                        return Promise.resolve(this.metricsOperand1);
+                    if (_this.metricsOperand1 === undefined) {
+                        _this.doPagingLoop(
+                            function(requestedPageNumber) { return _this.datasource.getMetricNames(_this.target.app_id, requestedPageNumber); },
+                            null,
+                            10,
+                            1000,
+                            function() { return _this.metricsOperand1; },
+                            function(cachedData) { _this.metricsOperand1 = cachedData; },
+                            function(dataItem) { _this.metricsOperand1.push(dataItem); }
+                        );
                     }
-                    else {
-                        return this.datasource.getMetricNames(this.target.app_id)
-                            .then(function (metrics) {
-                            _this.metricsOperand1 = metrics;
-                            return metrics;
-                        });
-                    }
+                    return Promise.resolve(_this.metricsOperand1);
                 };
+
                 // Gets list of metric namespaces from datasource to populate the Metric Namespace dropdown
                 NewRelicQueryCtrl.prototype.getMetricNamespaces = function () {
                     return this.getMetrics().then(function (metrics) {
@@ -113,16 +132,18 @@ System.register(['app/plugins/sdk', 'lodash'], function(exports_1) {
                 // Gets list of metrics from datasource for the second operand
                 NewRelicQueryCtrl.prototype.getMetricsOperand2 = function () {
                     var _this = this;
-                    if (this.metricsOperand2) {
-                        return Promise.resolve(this.metricsOperand2);
+                    if (_this.metricsOperand2 === undefined) {
+                        _this.doPagingLoop(
+                            function(requestedPageNumber) { return _this.datasource.getMetricNames(_this.target.app_id, requestedPageNumber); },
+                            null,
+                            10,
+                            1000,
+                            function() { return _this.metricsOperand2; },
+                            function(cachedData) { _this.metricsOperand2 = cachedData; },
+                            function(dataItem) { _this.metricsOperand2.push(dataItem); }
+                        );
                     }
-                    else {
-                        return this.datasource.getMetricNames(this.target.app_id)
-                            .then(function (metricsOperand2) {
-                            _this.metricsOperand2 = metricsOperand2;
-                            return metricsOperand2;
-                        });
-                    }
+                    return Promise.resolve(_this.metricsOperand2);
                 };
                 // Gets list of metric namespaces from datasource to populate the Metric Namespace dropdown for the second operand
                 NewRelicQueryCtrl.prototype.getMetricNamespacesOperand2 = function () {
